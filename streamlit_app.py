@@ -5,8 +5,12 @@ st.markdown("""
 
     This is my first and simple Streamlit app
 
+## Markdown examples:
+
     - One list element
     - Another list element
 
-    Bye!
+## Widget elements:
+
 """)
+st.button(label="test")
