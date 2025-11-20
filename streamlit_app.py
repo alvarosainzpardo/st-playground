@@ -3,12 +3,8 @@ import streamlit as st
 
 import asyncio
 
-st.markdown("""
-    # My first Goggle ADK app
-
-    This is my first and simple Google ADK app
-    """
-            )
+st.title("Chat-GPT-like clone")
+st.subheader("Made with love by Alvaro")
 
 try:
     GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
@@ -36,13 +32,38 @@ except Exception as e:
 runner = InMemoryRunner(agent=root_agent)
 st.write("✅ Runner created.")
 
-response = asyncio.run(runner.run_debug("What is Streamlit?"))
-st.markdown(response[0].content.parts[0].text)
+# Initialize chat history
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
-response = asyncio.run(runner.run_debug("What is the current weather in Madrid?"))
-st.markdown(response[0].content.parts[0].text)
+# Display chat messages from history on app rerun
+for message in st.session_state.messages:
+    with st.chat_message(message["role"]):
+        st.markdown(message["content"])
 
-for event in asyncio.run(runner.run_debug(["Whats the complete name of the current president of United States?", "Whats the complete name of his wife?"])):
-    if event.content and event.content.parts and event.content.parts[0].text and event.content.parts[0].text != "None":
-        response = event.content.parts[0].text
+# React to user input
+if prompt := st.chat_input("What is up?"):
+    # Display user message in chat message container
+    st.chat_message("user").markdown(prompt)
+    # Add user message to chat history
+    st.session_state.messages.append({"role": "user", "content": prompt})
+
+    for event in asyncio.run(runner.run_debug([prompt])):
+        if event.content and event.content.parts and event.content.parts[0].text and event.content.parts[0].text != "None":
+            response = event.content.parts[0].text
+    # Display assistant response in chat message container
+    with st.chat_message("assistant"):
         st.markdown(response)
+    # Add assistant response to chat history
+    st.session_state.messages.append({"role": "assistant", "content": response})
+
+# response = asyncio.run(runner.run_debug("What is Streamlit?"))
+# st.markdown(response[0].content.parts[0].text)
+#
+# response = asyncio.run(runner.run_debug("What is the current weather in Madrid?"))
+# st.markdown(response[0].content.parts[0].text)
+#
+# for event in asyncio.run(runner.run_debug(["Whats the complete name of the current president of United States?", "Whats the complete name of his wife?"])):
+#     if event.content and event.content.parts and event.content.parts[0].text and event.content.parts[0].text != "None":
+#         response = event.content.parts[0].text
+#         st.markdown(response)
