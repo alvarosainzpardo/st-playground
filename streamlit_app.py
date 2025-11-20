@@ -32,6 +32,9 @@ except Exception as e:
 runner = InMemoryRunner(agent=root_agent)
 st.write("✅ Runner created.")
 
+st.divider()
+st.subheader("Chat with the assistant")
+
 # Initialize chat history
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -48,13 +51,17 @@ if prompt := st.chat_input("Ask anything"):
     # Add user message to chat history
     st.session_state.messages.append({"role": "user", "content": prompt})
 
-    response = ""
-    for event in asyncio.run(runner.run_debug([prompt])):
-        if event.content and event.content.parts and event.content.parts[0].text and event.content.parts[0].text != "None":
-            response += event.content.parts[0].text
     # Display assistant response in chat message container
     with st.chat_message("assistant"):
-        st.markdown(response)
+        message_placeholder = st.empty() # Create an empty placeholder to update with the assistant's response.
+        with st.spinner("Assistant thinking..."): # Show a spinner while the agent processes the request.
+            for event in asyncio.run(runner.run_debug([prompt])):
+                if event.is_final_response():
+                    if event.content and event.content.parts:
+                        for part in event.content.parts:
+                            if part.text and part.text != "None":
+                                response = part.text
+                                st.markdown(response)
     # Add assistant response to chat history
     st.session_state.messages.append({"role": "assistant", "content": response})
 
