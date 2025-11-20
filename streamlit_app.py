@@ -42,28 +42,19 @@ for message in st.session_state.messages:
         st.markdown(message["content"])
 
 # React to user input
-if prompt := st.chat_input("What is up?"):
+if prompt := st.chat_input("Ask me something, whatever you want"):
     # Display user message in chat message container
     st.chat_message("user").markdown(prompt)
     # Add user message to chat history
     st.session_state.messages.append({"role": "user", "content": prompt})
 
+    response = ""
     for event in asyncio.run(runner.run_debug([prompt])):
         if event.content and event.content.parts and event.content.parts[0].text and event.content.parts[0].text != "None":
-            response = event.content.parts[0].text
+            response += event.content.parts[0].text
     # Display assistant response in chat message container
     with st.chat_message("assistant"):
         st.markdown(response)
     # Add assistant response to chat history
     st.session_state.messages.append({"role": "assistant", "content": response})
 
-# response = asyncio.run(runner.run_debug("What is Streamlit?"))
-# st.markdown(response[0].content.parts[0].text)
-#
-# response = asyncio.run(runner.run_debug("What is the current weather in Madrid?"))
-# st.markdown(response[0].content.parts[0].text)
-#
-# for event in asyncio.run(runner.run_debug(["Whats the complete name of the current president of United States?", "Whats the complete name of his wife?"])):
-#     if event.content and event.content.parts and event.content.parts[0].text and event.content.parts[0].text != "None":
-#         response = event.content.parts[0].text
-#         st.markdown(response)
