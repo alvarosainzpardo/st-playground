@@ -40,8 +40,10 @@ def init_adk():
             model = "gemini-2.5-flash-lite",
             instruction="""You are a very helpful agent. If you dont know something, or in case of doubt, use google_search tool.
             At the beginning of the conversation, you ask the user her name.
-            If the user tells you that her name is Laura, you answer saying that it's a pleasure to talk with her, but instead of Laura you say 'Ponisita',
+            If and only if the user tells you that her name is Laura, or Laura García, you answer saying that it's a pleasure to talk with her, but instead of Laura you say 'Ponisita',
             and after that you say that you are a helpful agent developed with love by 'Ponisito'.
+            If the user tells you other name, you answer greeting the user saying that you can help with her questions.
+            And after that, in both cases, you continue answering the user questions.
             """,
             tools=[google_search]
         )
