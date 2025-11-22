@@ -1,12 +1,15 @@
 import os
 from time import time
-import streamlit as st
 import asyncio
+
 from google.genai import types
 from google.adk.agents import Agent
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.adk.tools import google_search
+
+import streamlit as st
+from st_cookies_manager import EncryptedCookieManager
 
 # Constants definitions
 APP_NAME="default_app"
@@ -31,6 +34,14 @@ def get_google_api_key():
 #     st.write("✅ Gemini API key setup complete.")
 # except Exception as e:
 #     st.write(f"🔑 Authentication Error: Please make sure you have added 'GOOGLE_API_KEY' to your Kaggle secrets. Details: {e}")
+
+# @st.cache_resource
+def init_cookies():
+    cookies_password = st.secrets["COOKIES_PASSWORD"]
+    if not cookies_password:
+        st.error("‼️ Cookies initialization Error: Please make sure you have added 'COOKIES_PASSWORD' to your Streamlit secrets. 🔑")
+        st.stop()
+    return EncryptedCookieManager(password=cookies_password)
 
 @st.cache_resource
 def init_adk():
@@ -69,18 +80,20 @@ def init_adk():
 # st.write(f"   - Using: {session_service.__class__.__name__}")
 
 
-def get_adk_session(runner: Runner):
-    if ADK_SESSION_KEY not in st.session_state:
+def get_adk_session(runner: Runner, cookies: EncryptedCookieManager):
+    if ADK_SESSION_KEY in st.session_state:
+        session_id = st.session_state[ADK_SESSION_KEY]
+    elif ADK_SESSION_KEY in cookies:
+        session_id = cookies[ADK_SESSION_KEY]
+    else:
         session_id = f"streamlit_adk_session_{int(time())}_{os.urandom(4).hex()}"
         st.session_state[ADK_SESSION_KEY] = session_id
+        cookies[ADK_SESSION_KEY] = session_id
         asyncio.run(runner.session_service.create_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id))
-    else:
-        session_id = st.session_state[ADK_SESSION_KEY]
     return session_id
 
 # Define helper functions that will be reused throughout the notebook
 async def run_at_session(runner_instance: Runner, prompt: str, session_name: str = "default"):
-
     # Get app name from the Runner
     app_name = runner_instance.app_name
     session_service = runner_instance.session_service
@@ -117,7 +130,10 @@ st.text("Made with ❤️ by Álvaro")
 
 get_google_api_key()
 runner = init_adk()
-adk_session_id = get_adk_session(runner)
+cookies = init_cookies()
+if not cookies.ready():
+    st.stop()
+adk_session_id = get_adk_session(runner, cookies)
 
 st.divider()
 st.subheader("Chat with the assistant")
@@ -132,8 +148,8 @@ for message in st.session_state.messages:
         messages = message["content"]
         if type(messages) == str:
             messages = [messages]
-        for response in messages:
-            st.markdown(response)
+        for message in messages:
+            st.markdown(message)
 
 # React to user input
 if prompt := st.chat_input("Ask anything"):
