@@ -83,9 +83,7 @@ async def run_at_session(runner_instance: Runner, prompt: str, session_name: str
 
     # Get app name from the Runner
     app_name = runner_instance.app_name
-    print(f"App name: {app_name}")
     session_service = runner_instance.session_service
-    print(f"Session service sessions: {await session_service.list_sessions(app_name=app_name)}")
 
 
     # Attempt to create a new session or retrieve an existing one
@@ -97,12 +95,8 @@ async def run_at_session(runner_instance: Runner, prompt: str, session_name: str
     #     print(f"Get session: {session}")
 
     session = await session_service.get_session(app_name=app_name, user_id=USER_ID, session_id=session_name)
-    print(f"Get session: {session}")
     if not session:
         session = await session_service.create_session(app_name=app_name, user_id=USER_ID, session_id=session_name)
-        print(f"Create session: {session}")
-
-    print(f"Session id: {session.id}")
 
     response = []
 
@@ -135,7 +129,11 @@ if "messages" not in st.session_state:
 # Display chat messages from history on app rerun
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
-        st.markdown(message["content"])
+        messages = message["content"]
+        if type(messages) == str:
+            messages = [messages]
+        for response in messages:
+            st.markdown(response)
 
 # React to user input
 if prompt := st.chat_input("Ask anything"):
