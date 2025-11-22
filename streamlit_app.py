@@ -119,7 +119,7 @@ async def run_at_session(runner_instance: Runner, prompt: str, session_name: str
     return response
 
 st.title("Chat-GPT-like clone")
-st.subheader("Made with love by Alvaro")
+st.text("Made with ❤️ by Álvaro")
 
 get_google_api_key()
 runner = init_adk()
@@ -136,7 +136,6 @@ if "messages" not in st.session_state:
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
-
 
 # React to user input
 if prompt := st.chat_input("Ask anything"):
