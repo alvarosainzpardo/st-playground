@@ -35,7 +35,6 @@ def get_google_api_key():
 # except Exception as e:
 #     st.write(f"🔑 Authentication Error: Please make sure you have added 'GOOGLE_API_KEY' to your Kaggle secrets. Details: {e}")
 
-# @st.cache_resource
 def init_cookies():
     cookies_password = st.secrets["COOKIES_PASSWORD"]
     if not cookies_password:
@@ -66,7 +65,7 @@ def init_adk():
         runner = Runner(agent=root_agent, app_name=APP_NAME, session_service=session_service)
         return runner
     except Exception as e:
-        st.error(f"Google ADK component creation error: Details {e}")
+        st.error(f"‼️ Google ADK component creation error: Details {e}")
         st.stop()
 
 # # InMemorySessionService stores conversations in RAM (temporary)
@@ -125,47 +124,66 @@ async def run_at_session(runner_instance: Runner, prompt: str, session_name: str
                         response.append(part.text)
     return response
 
-st.title("Chat-GPT-like clone")
-st.text("Made with ❤️ by Álvaro")
+def main():
+    st.title("Chat-GPT-like clone")
+    st.text("Made with ❤️ by Álvaro")
 
-get_google_api_key()
-runner = init_adk()
-cookies = init_cookies()
-if not cookies.ready():
-    st.stop()
-adk_session_id = get_adk_session(runner, cookies)
+    # Check if the user is logged in
+    if not st.user.is_logged_in:
+        # If not logged in, display a login button
+        if st.button("Log in with Google"):
+            # Redirect to the OIDC provider for authentication
+            st.login("google")
+    else:
+        # If logged in, display user information and a logout button
+        st.write(f"Hello, {st.user.name}!")
+        # st.write(f"Your email is: {st.user.email}")
+        # You can access other user attributes provided by your identity provider
 
-st.divider()
-st.subheader("Chat with the assistant")
+        if st.button("Log out"):
+            # Log the user out
+            st.logout()
+            st.rerun() # Rerun the app to show the login state
 
-# Initialize chat history
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+        get_google_api_key()
+        runner = init_adk()
+        cookies = init_cookies()
+        if not cookies.ready():
+            st.stop()
+        adk_session_id = get_adk_session(runner, cookies)
 
-# Display chat messages from history on app rerun
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        messages = message["content"]
-        if type(messages) == str:
-            messages = [messages]
-        for message in messages:
-            st.markdown(message)
+        st.divider()
+        # st.subheader("Chat with the assistant")
 
-# React to user input
-if prompt := st.chat_input("Ask anything"):
-    # Display user message in chat message container
-    st.chat_message("user").markdown(prompt)
-    # Add user message to chat history
-    st.session_state.messages.append({"role": "user", "content": prompt})
+        # Initialize chat history
+        if "messages" not in st.session_state:
+            st.session_state.messages = []
 
-    # Display assistant response in chat message container
-    with st.chat_message("assistant"):
-        message_placeholder = st.empty() # Create an empty placeholder to update with the assistant's response.
-        with st.spinner("Assistant thinking..."): # Show a spinner while the agent processes the request.
-            responses = asyncio.run(run_at_session(runner, prompt, adk_session_id))
-            for response in responses:
-                st.markdown(response)
+        # Display chat messages from history on app rerun
+        for message in st.session_state.messages:
+            with st.chat_message(message["role"]):
+                messages = message["content"]
+                if type(messages) == str:
+                    messages = [messages]
+                for message in messages:
+                    st.markdown(message)
 
-    # Add assistant response to chat history
-    st.session_state.messages.append({"role": "assistant", "content": responses})
+        # React to user input
+        if prompt := st.chat_input("Ask anything"):
+            # Display user message in chat message container
+            st.chat_message("user").markdown(prompt)
+            # Add user message to chat history
+            st.session_state.messages.append({"role": "user", "content": prompt})
 
+            # Display assistant response in chat message container
+            with st.chat_message("assistant"):
+                message_placeholder = st.empty() # Create an empty placeholder to update with the assistant's response.
+                with st.spinner("Assistant thinking..."): # Show a spinner while the agent processes the request.
+                    responses = asyncio.run(run_at_session(runner, prompt, adk_session_id))
+                    for response in responses:
+                        st.markdown(response)
+
+            # Add assistant response to chat history
+            st.session_state.messages.append({"role": "assistant", "content": responses})
+
+main()
