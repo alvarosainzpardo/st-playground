@@ -1,5 +1,6 @@
 import os
 from time import time
+from typing import List
 import asyncio
 
 from google.genai import types
@@ -79,22 +80,29 @@ def init_adk():
 # st.write(f"   - Using: {session_service.__class__.__name__}")
 
 
-def get_adk_session(runner: Runner, cookies: EncryptedCookieManager):
+async def get_adk_session(runner_instance: Runner, cookies: EncryptedCookieManager) -> str:
+    # Get app name and session service from the Runner
+    app_name = runner_instance.app_name
+    session_service = runner_instance.session_service
+
     if ADK_SESSION_KEY in st.session_state:
-        session_id = st.session_state[ADK_SESSION_KEY]
+        session_id = str(st.session_state[ADK_SESSION_KEY])
     elif ADK_SESSION_KEY in cookies:
-        session_id = cookies[ADK_SESSION_KEY]
+        session_id = str(cookies[ADK_SESSION_KEY])
     else:
         # session_id = f"streamlit_adk_session_{int(time())}_{os.urandom(4).hex()}"
-        session_id = st.user.email
+        session_id = str(st.user.email)
         st.session_state[ADK_SESSION_KEY] = session_id
         cookies[ADK_SESSION_KEY] = session_id
-        asyncio.run(runner.session_service.create_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id))
+        try:
+            await session_service.create_session(app_name=app_name, user_id=USER_ID, session_id=session_id)
+        except:
+            await session_service.get_session(app_name=app_name, user_id=USER_ID, session_id=session_id)
     return session_id
 
 # Define helper functions that will be reused throughout the notebook
-async def run_at_session(runner_instance: Runner, prompt: str, session_name: str = "default"):
-    # Get app name from the Runner
+async def run_at_session(runner_instance: Runner, prompt: str, session_name: str = "default") -> List[str]:
+    # Get app name and session service from the Runner
     app_name = runner_instance.app_name
     session_service = runner_instance.session_service
 
@@ -127,7 +135,8 @@ async def run_at_session(runner_instance: Runner, prompt: str, session_name: str
 
 def main():
     st.title("Meet AI Mode-like clone")
-    st.text("An AI Agent made with ❤️ by Álvaro")
+    greet = st.empty()
+    greet.write("This is an AI Agent made with ❤️ by Álvaro")
 
     # Check if the user is logged in
     if not st.user.is_logged_in:
@@ -137,17 +146,20 @@ def main():
             st.login("google")
     else:
         # If logged in, display user information and a logout button
-        if st.user.email == "laurigh1@gmail.com":
-            st.markdown("""
-            Ciao, amore mio, bellisima Ponisita:
+        if st.user.email in ["laurigh1@gmail.com", "alvarosainzpardo@gmail.com"]:
+            greet.markdown(f"""
+            Ciao {st.user.name}, bellisima Ponisita:
 
             - Eres la más preciosa del mundo
             - ¡Eres mi amore y siempre lo serás!
-            """)
+
+            This is an AI Agent made with ❤️ by Álvaro""")
         else:
-            st.write(f"Hello, {st.user.name}!")
+            greet.write(f"Hello, {st.user.name}! This is an AI Agent made with ❤️ by Álvaro")
         # st.write(f"Your email is: {st.user.email}")
         # You can access other user attributes provided by your identity provider
+
+        st.write(st.user.email)
 
         if st.button("Log out"):
             # Log the user out
@@ -159,7 +171,7 @@ def main():
         cookies = init_cookies()
         if not cookies.ready():
             st.stop()
-        adk_session_id = get_adk_session(runner, cookies)
+        adk_session_id = asyncio.run(get_adk_session(runner, cookies))
 
         st.subheader("Ask detailed questions for better responses")
         st.divider()
