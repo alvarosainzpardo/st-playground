@@ -50,11 +50,6 @@ def init_adk():
             name = "my_first_agent",
             model = "gemini-2.5-flash-lite",
             instruction="""You are a very helpful agent. If you dont know something, or in case of doubt, use google_search tool.
-            At the beginning of the conversation, you ask the user her name.
-            If and only if the user tells you that her name is Laura, or Laura García, you answer saying that it's a pleasure to talk with her, but instead of Laura you say 'Ponisita',
-            and after that you say that you are a helpful agent developed with love by 'Ponisito'.
-            If the user tells you other name, you answer greeting the user saying that you can help with her questions.
-            And after that, in both cases, you continue answering the user questions.
             """,
             tools=[google_search]
         )
@@ -118,11 +113,16 @@ async def run_at_session(runner_instance: Runner, prompt: str, session_name: str
     session = await session_service.get_session(app_name=app_name, user_id=USER_ID, session_id=session_name)
     if not session:
         session = await session_service.create_session(app_name=app_name, user_id=USER_ID, session_id=session_name)
+        print(f"Created session name: {session_name}. Session: {session}")
+
+    st.sidebar.write(session)
 
     response = []
 
     # Convert the query string to the ADK Content format
     query = types.Content(role="user", parts=[types.Part(text=prompt)])
+
+    print(f"session_name: {session_name} session.id: {session.id}")
 
     # Stream the agent's response asynchronously
     async for event in runner_instance.run_async(user_id=USER_ID, session_id=session.id, new_message=query):
@@ -135,8 +135,7 @@ async def run_at_session(runner_instance: Runner, prompt: str, session_name: str
 
 def main():
     st.title("Meet AI Mode-like clone")
-    greet = st.empty()
-    greet.write("This is an AI Agent made with ❤️ by Álvaro")
+    st.write("This is an AI Agent made with ❤️ by Álvaro")
 
     # Check if the user is logged in
     if not st.user.is_logged_in:
@@ -146,30 +145,22 @@ def main():
             st.login("google")
     else:
         # If logged in, display user information and a logout button
-        if st.user.email in ["laurigh1@gmail.com", "alvarosainzpardo@gmail.com"]:
-            greet.markdown(f"""
-            Ciao {st.user.name}, bellisima Ponisita:
-
-            - Eres la más preciosa del mundo
-            - ¡Eres mi amore y siempre lo serás!
-
-            This is an AI Agent made with ❤️ by Álvaro""")
-        else:
-            greet.write(f"Hello, {st.user.name}! This is an AI Agent made with ❤️ by Álvaro")
+        st.sidebar.write(st.user.name)
         # st.write(f"Your email is: {st.user.email}")
         # You can access other user attributes provided by your identity provider
 
-        if st.button("Log out"):
+        if st.sidebar.button("Log out"):
             # Log the user out
             st.logout()
             st.rerun() # Rerun the app to show the login state
 
         get_google_api_key()
         runner = init_adk()
-        cookies = init_cookies()
-        if not cookies.ready():
-            st.stop()
-        adk_session_id = asyncio.run(get_adk_session(runner, cookies))
+        # cookies = init_cookies()
+        # if not cookies.ready():
+        #     st.stop()
+        # adk_session_id = asyncio.run(get_adk_session(runner, cookies))
+        adk_session_id = str(st.user.email)
 
         st.subheader("Ask detailed questions for better responses")
         st.divider()
