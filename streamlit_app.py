@@ -85,7 +85,8 @@ def get_adk_session(runner: Runner, cookies: EncryptedCookieManager):
     elif ADK_SESSION_KEY in cookies:
         session_id = cookies[ADK_SESSION_KEY]
     else:
-        session_id = f"streamlit_adk_session_{int(time())}_{os.urandom(4).hex()}"
+        # session_id = f"streamlit_adk_session_{int(time())}_{os.urandom(4).hex()}"
+        session_id = st.user.email
         st.session_state[ADK_SESSION_KEY] = session_id
         cookies[ADK_SESSION_KEY] = session_id
         asyncio.run(runner.session_service.create_session(app_name=APP_NAME, user_id=USER_ID, session_id=session_id))
