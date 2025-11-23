@@ -115,8 +115,6 @@ async def run_at_session(runner_instance: Runner, prompt: str, session_name: str
         session = await session_service.create_session(app_name=app_name, user_id=USER_ID, session_id=session_name)
         print(f"Created session name: {session_name}. Session: {session}")
 
-    st.sidebar.write(session)
-
     response = []
 
     # Convert the query string to the ADK Content format
