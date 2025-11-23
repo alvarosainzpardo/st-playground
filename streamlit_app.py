@@ -126,7 +126,7 @@ async def run_at_session(runner_instance: Runner, prompt: str, session_name: str
 
 def main():
     st.title("Meet AI Mode-like clone")
-    st.text("Made with ❤️ by Álvaro Sainz-Pardo")
+    st.text("An AI Agent made with ❤️ by Álvaro")
 
     # Check if the user is logged in
     if not st.user.is_logged_in:
@@ -136,7 +136,15 @@ def main():
             st.login("google")
     else:
         # If logged in, display user information and a logout button
-        st.write(f"Hello, {st.user.name}!")
+        if st.user.email == "laurigh1@gmail.com":
+            st.markdown("""
+            Hello Ponisita:
+
+            - Eres la más preciosa del mundo
+            - ¡Eres mi amore y siempre lo serás!
+            """)
+        else:
+            st.write(f"Hello, {st.user.name}!")
         # st.write(f"Your email is: {st.user.email}")
         # You can access other user attributes provided by your identity provider
 
