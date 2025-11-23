@@ -125,8 +125,8 @@ async def run_at_session(runner_instance: Runner, prompt: str, session_name: str
     return response
 
 def main():
-    st.title("Chat-GPT-like clone")
-    st.text("Made with ❤️ by Álvaro")
+    st.title("Meet AI Mode-like clone")
+    st.text("Made with ❤️ by Álvaro Sainz-Pardo")
 
     # Check if the user is logged in
     if not st.user.is_logged_in:
@@ -152,6 +152,7 @@ def main():
             st.stop()
         adk_session_id = get_adk_session(runner, cookies)
 
+        st.subheader("Ask detailed questions for better responses")
         st.divider()
         # st.subheader("Chat with the assistant")
 
