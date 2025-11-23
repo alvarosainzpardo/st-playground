@@ -139,7 +139,7 @@ def main():
         # If logged in, display user information and a logout button
         if st.user.email == "laurigh1@gmail.com":
             st.markdown("""
-            Hello Ponisita:
+            Ciao, amore mio, bellisima Ponisita:
 
             - Eres la más preciosa del mundo
             - ¡Eres mi amore y siempre lo serás!
