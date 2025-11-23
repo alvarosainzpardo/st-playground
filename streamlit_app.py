@@ -159,8 +159,6 @@ def main():
         # st.write(f"Your email is: {st.user.email}")
         # You can access other user attributes provided by your identity provider
 
-        st.write(st.user.email)
-
         if st.button("Log out"):
             # Log the user out
             st.logout()
