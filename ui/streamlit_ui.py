@@ -7,7 +7,7 @@ def run_streamlit_app():
     st.write("This is an AI App made with ❤️ by Álvaro using Google Agent Development Kit and Streamlit")
 
     # Check if the user is logged in
-    if not st.experimental_user.is_logged_in:
+    if not st.user.is_logged_in:
         # If not logged in, display a login button
         if st.button("Log in with Google"):
             # Redirect to the OIDC provider for authentication
