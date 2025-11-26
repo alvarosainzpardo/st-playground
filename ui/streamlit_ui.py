@@ -3,8 +3,8 @@ import streamlit as st
 from adk.init_adk import get_google_api_key, initialize_adk, run_at_session
 
 def run_streamlit_app():
-    st.title("Meet AI Mode-like clone")
-    st.write("This is an AI Agent made with ❤️ by Álvaro")
+    st.title("Personal restaurant recommender")
+    st.write("This is an AI App made with ❤️ by Álvaro using Google Agent Development Kit")
 
     # Check if the user is logged in
     if not st.user.is_logged_in:
