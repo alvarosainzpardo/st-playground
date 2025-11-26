@@ -7,6 +7,7 @@ import streamlit as st
 from google.genai import types
 from google.adk.models.google_llm import Gemini
 from google.adk.agents import LlmAgent
+from google.adk.apps.app import App, EventsCompactionConfig
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService, DatabaseSessionService
 from google.adk.tools import google_search, AgentTool
@@ -113,10 +114,18 @@ def initialize_adk():
         db_url = f"sqlite:///session_service_data.db"  # Local SQLite file
         session_service = DatabaseSessionService(db_url=db_url)
 
+        # Create the app with context management
+        app_compacting = App(
+            name=APP_NAME,
+            root_agent=root_agent,
+            events_compaction_config=EventsCompactionConfig(
+                compaction_interval=3,  # Trigger compaction every 3 invocations
+                overlap_size=1,  # Keep 1 previous turn for context
+            )
+        )
 
-
-        # Step 3: Create the Runner
-        runner = Runner(agent=root_agent, app_name=APP_NAME, session_service=session_service)
+        # Create the Runner
+        runner = Runner(app=app_compacting, session_service=session_service)
         return runner
     except Exception as e:
         st.error(f"‼️ Google ADK component creation error: Details {e}")
