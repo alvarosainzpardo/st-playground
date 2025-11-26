@@ -6,8 +6,8 @@ import asyncio
 from google.genai import types
 from google.adk.agents import Agent
 from google.adk.runners import Runner
-from google.adk.sessions import InMemorySessionService
-from google.adk.tools import google_search
+from google.adk.sessions import InMemorySessionService, DatabaseSessionService
+from google.adk.tools import google_search, AgentTool
 
 import streamlit as st
 from st_cookies_manager import EncryptedCookieManager
@@ -16,6 +16,41 @@ from st_cookies_manager import EncryptedCookieManager
 APP_NAME="default_app"
 USER_ID="default_user"
 ADK_SESSION_KEY="default_session_key"
+
+def get_user_name() -> dict:
+    """"Returns the full name the user.
+
+    Args:
+        None.
+
+    Returns:
+        Dictionary with status and the user name.
+        Success: {"status": "success", "user_full_name": "John Doe"}
+        Error: {"status": "error", "error_message": "User not logged in"}
+    """
+    if not st.user:
+        return {"status": "error", "error_message": "User not logged in"}
+    else:
+        # return {"status": "success", "user_email": str(st.user.email), "user_full_name": str(st.user.name)}
+        return {"status": "success", "user_full_name": "John Doe"}
+
+
+def get_user_email() -> dict:
+    """"Returns the email address of the user.
+
+    Args:
+        None.
+
+    Returns:
+        Dictionary with status and the user name.
+        Success: {"status": "success", "user_email": "john@doe.com"}
+        Error: {"status": "error", "error_message": "User not logged in"}
+    """
+    if not st.user:
+        return {"status": "error", "error_message": "User not logged in"}
+    else:
+        # return {"status": "success", "user_email": str(st.user.email), "user_full_name": str(st.user.name)}
+        return {"status": "success", "user_email": "john@doe.com"}
 
 @st.cache_data
 def get_google_api_key():
@@ -46,16 +81,42 @@ def init_cookies():
 @st.cache_resource
 def init_adk():
     try:
-        root_agent = Agent(
-            name = "my_first_agent",
+        user_info_agent = Agent(
+            name = "user_info_agent",
             model = "gemini-2.5-flash-lite",
-            instruction="""You are a very helpful agent. If you dont know something, or in case of doubt, use google_search tool.
+            instruction="""You are an expert in the personal information about the user.
+            Use `get_user_name()` to obtain the full name of the user.
+            Use `get_user_email()` to obtain the email address of the user.
+            In other case, answer that you dont know that information.
+            """,
+            tools=[get_user_name, get_user_email]
+        )
+
+        search_agent = Agent(
+            name = "search_agent",
+            model = "gemini-2.5-flash-lite",
+            instruction="""You are an agent that search the internet for information.
             """,
             tools=[google_search]
         )
+
+        root_agent = Agent(
+            name = "root_agent",
+            model = "gemini-2.5-flash-lite",
+            instruction="""You are a very helpful agent.
+            RULES:
+            - If you need to answer personal information about the user, like the user name or email address, ask the user_info_agent tool
+            - For information that you dont know and is not user personal information, use search_agent tool.
+            """,
+            tools=[AgentTool(user_info_agent), AgentTool(search_agent)]
+        )
         # st.write("✅ Root Agent defined.")
         # InMemorySessionService stores conversations in RAM (temporary)
-        session_service = InMemorySessionService()
+        # session_service = InMemorySessionService()
+        db_url = f"sqlite:///session_service_data.db"  # Local SQLite file
+        session_service = DatabaseSessionService(db_url=db_url)
+
+
 
         # Step 3: Create the Runner
         runner = Runner(agent=root_agent, app_name=APP_NAME, session_service=session_service)
@@ -113,22 +174,23 @@ async def run_at_session(runner_instance: Runner, prompt: str, session_name: str
     session = await session_service.get_session(app_name=app_name, user_id=USER_ID, session_id=session_name)
     if not session:
         session = await session_service.create_session(app_name=app_name, user_id=USER_ID, session_id=session_name)
-        print(f"Created session name: {session_name}. Session: {session}")
 
     response = []
 
     # Convert the query string to the ADK Content format
     query = types.Content(role="user", parts=[types.Part(text=prompt)])
 
-    print(f"session_name: {session_name} session.id: {session.id}")
-
     # Stream the agent's response asynchronously
     async for event in runner_instance.run_async(user_id=USER_ID, session_id=session.id, new_message=query):
-        if event.is_final_response():
-            if event.content and event.content.parts:
-                for part in event.content.parts:
-                    if part.text and part.text != "None":
-                        response.append(part.text)
+        try:
+            if event.is_final_response():
+                if event.content and event.content.parts:
+                    for part in event.content.parts:
+                        if part.text and part.text != "None":
+                            response.append(part.text)
+        except Exception as e:
+            st.error(f"‼️ Error processing LLM response: Details {e}")
+            st.stop()
     return response
 
 def main():
@@ -189,8 +251,13 @@ def main():
                 message_placeholder = st.empty() # Create an empty placeholder to update with the assistant's response.
                 with st.spinner("Assistant thinking..."): # Show a spinner while the agent processes the request.
                     responses = asyncio.run(run_at_session(runner, prompt, adk_session_id))
-                    for response in responses:
-                        st.markdown(response)
+                    print(responses)
+                    try:
+                        for response in responses:
+                            st.markdown(response)
+                    except Exception as e:
+                        st.error(f"‼️ Error processing LLM response: Details {e}")
+                        st.stop()
 
             # Add assistant response to chat history
             st.session_state.messages.append({"role": "assistant", "content": responses})
