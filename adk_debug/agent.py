@@ -25,7 +25,7 @@ def get_user_info() -> dict:
         return {"status": "error", "error_message": "User not logged in"}
     else:
         # return {"status": "success", "user_email": str(st.user.email), "user_full_name": str(st.user.name)}
-        return {"status": "success", "user_data": "Your email is bob@smith.com, your full name is Bob Smith"}
+        return {"status": "success", "data": "the email is bob@smith.com; the full name is Bob Smith"}
 
 user_info_agent = LlmAgent(
     name = "user_info_agent",
